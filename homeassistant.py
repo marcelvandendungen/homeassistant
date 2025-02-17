@@ -11,7 +11,7 @@ headers = {
     "Content-Type": "application/json",
 }
 
-Sensor = Enum("Sensor", [("TEMPERATURE", 1), ("HUMIDITY", 2), ("BATTERY", 3)])
+SensorKind = Enum("SensorKind", [("TEMPERATURE", 1), ("HUMIDITY", 2), ("BATTERY", 3)])
 Period = Enum("Period", [("TODAY", 1), ("YESTERDAY", 2), ("PASTWEEK", 3)])
 
 
@@ -65,7 +65,7 @@ class Measurement:
         return f"{self.__class__.__name__}: {self.__dict__}"
 
 
-class Device:
+class Sensor:
     def __init__(self, **entries):
         self.__dict__.update(entries)
 
@@ -90,23 +90,29 @@ class Device:
 
     @property
     def type(self):
+        return self.entity_id.split(".")[0]
+
+    @property
+    def kind(self):
         if self.has_attr("device_class", "temperature"):
-            return Sensor.TEMPERATURE
+            return SensorKind.TEMPERATURE
         if self.has_attr("device_class", "humidity"):
-            return Sensor.HUMIDITY
+            return SensorKind.HUMIDITY
 
 
 class HomeAssistant:
 
     def __init__(self):
         self._states = get_request(BASE_URL + "/api/states", None)
-        self._devices = [Device.from_dict(**state) for state in self._states]
+        self._devices = [Sensor.from_dict(**state) for state in self._states]
 
-    def select(self, type: Sensor, id=None):
+    def select(self, type: str, kind: SensorKind, id=None):
         if id is None:
-            return self.find(lambda d: d.type == type)
+            return self.find(lambda d: d.type == type and d.kind == kind)
         else:
-            return self.find(lambda d: d.type == type and d.entity_id == id)
+            return self.find(
+                lambda d: d.type == type and d.kind == kind and d.entity_id == id
+            )
 
     def find(self, filter):
         return [device for device in self._devices if filter(device)]
