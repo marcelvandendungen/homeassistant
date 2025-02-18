@@ -82,7 +82,6 @@ class Sensor:
 
     def history(self, period: Period) -> list[Measurement]:
         params = get_params(self.entity_id, period)
-        print(params)
         path = "/api/history/period"
         response = get_request(BASE_URL + path, params)
         self._history = [Measurement(**m) for m in response[0]]

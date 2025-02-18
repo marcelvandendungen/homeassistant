@@ -1,7 +1,7 @@
-from homeassistant import HomeAssistant, SensorKind, Period
 import hashlib
-import pandas as pd
 from pathlib import Path
+import pandas as pd
+from homeassistant import HomeAssistant, SensorKind, Period
 
 ha = HomeAssistant()
 
@@ -22,12 +22,8 @@ def resample_df(df):
     # Convert timestamp to datetime object and local timezone
     df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_convert("US/Pacific")
 
-    # df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.tz_localize(None)
     # Convert temperature to number
     df["temperature"] = pd.to_numeric(df["temperature"])
-
-    # Set timestamp as index
-    # df.set_index("timestamp", inplace=True)
 
     # Resample to 30-minute intervals and calculate mean
     df_resampled = df.resample("30min", on="timestamp").mean()
@@ -49,10 +45,11 @@ def resample_df(df):
 
 
 def get_sensor_data(kind: SensorKind):
-    lst = []
 
     # iterate over all temperature sensors
     for sensor in ha.select(type="sensor", kind=kind):
+
+        lst = []
 
         # for each sensor, iterate over all measurements
         for measurement in sensor.history(Period.TODAY):
