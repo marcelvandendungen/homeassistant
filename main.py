@@ -1,3 +1,4 @@
+import os
 import hashlib
 from pathlib import Path
 import pandas as pd
@@ -6,10 +7,8 @@ from homeassistant import HomeAssistant, SensorKind, Period
 ha = HomeAssistant()
 
 
-def create_directories(sensors):
-    for sensor in sensors:
-        p = Path(sensor.entity_id.split(".")[1])
-        p.mkdir(exist_ok=True)
+def ensure_directory(path):
+    path.mkdir(exist_ok=True, parents=True)
 
 
 def calc_md5(args):
@@ -84,17 +83,24 @@ def write_csvs(lst, raw_name, filepath):
 
 
 def main():
-    # create directory per sensor
-    temp_sensors = ha.select(type="sensor", kind=SensorKind.TEMPERATURE)
-    hum_sensors = ha.select(type="sensor", kind=SensorKind.HUMIDITY)
-    create_directories(temp_sensors)
-    create_directories(hum_sensors)
+    datapath = Path(os.getenv("DATAPATH", "~/data")).expanduser()
 
     for id, lst in get_sensor_data(SensorKind.TEMPERATURE):
-        write_csvs(lst, f"{id}/raw_tmp.csv", f"{id}/temperature.csv")
+        ensure_directory(datapath / id)
+        write_csvs(
+            lst,
+            datapath / id / "raw_tmp.csv",
+            datapath / id / "temperature.csv",
+        )
 
+    # hum_sensors = ha.select(type="sensor", kind=SensorKind.HUMIDITY)
     for id, lst in get_sensor_data(SensorKind.HUMIDITY):
-        write_csvs(lst, f"{id}_raw_hum.csv", f"{id}/humidity.csv")
+        ensure_directory(datapath / id)
+        write_csvs(
+            lst,
+            datapath / id / "raw_hum.csv",
+            datapath / id / "humidity.csv",
+        )
 
 
 if __name__ == "__main__":

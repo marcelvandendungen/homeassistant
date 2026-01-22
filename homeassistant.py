@@ -1,13 +1,18 @@
 import os
+import sys
 import datetime
 import requests
 from enum import Enum
 
 BASE_URL = "http://homeassistant.local:8123"
 
+token = os.getenv("TOKEN")
+if not token:
+    print("Not access token found in environment")
+    sys.exit(-1)
 
 headers = {
-    "Authorization": f"Bearer {os.getenv("TOKEN")}",
+    "Authorization": f"Bearer {token}",
     "Content-Type": "application/json",
 }
 
@@ -84,8 +89,10 @@ class Sensor:
         params = get_params(self.entity_id, period)
         path = "/api/history/period"
         response = get_request(BASE_URL + path, params)
-        self._history = [Measurement(**m) for m in response[0]]
-        return self._history
+        if len(response):
+            self._history = [Measurement(**m) for m in response[0]]
+            return self._history
+        return []
 
     @property
     def type(self):
